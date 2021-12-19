@@ -1,6 +1,7 @@
-from cryptography.fernet import Fernet
+from cryptography.fernet import Fernet, InvalidToken
 from watchdog.events import FileSystemEventHandler
 import os
+from os import walk
 
 from tkinter import *
 from tkinter.ttk import *
@@ -44,27 +45,35 @@ class App(Frame):
         super().__init__(master)
 
         self.master.title("Security Check for Intruders")
-        self.master.geometry("650x300")
+        self.master.geometry("650x340")
 
-        self.entry = Entry(self)
-        self.entry.focus()
-        self.entry.pack()
-        self.enterPathButton = Button(self, text="Enter", width=10, command= self.enter_path)
-        self.exitButton= Button(self, text="Quit", width=10, command=self.exit_app)
-        self.enterDeleteButton = Button(self, text="Delete", width=10, command=self.delete_rows)
-        self.enterDeleteButton.pack(side = BOTTOM)
-        self.exitButton.pack(side = BOTTOM)
-        self.enterPathButton.pack(side = BOTTOM)
+        self.p_label = Label(self, text="Enter Password Within 1 Minute: ")
+        self.p_label.pack()
+        self.p_entry = Entry(self, width=30, show="*")
+        self.p_entry.pack(padx=20, pady=1)
+        self.p_entry.focus()
+        self.enterPasswordButton = Button(self, text="Enter", width=10, command= self.check)
+        self.enterPasswordButton.pack(padx=20, pady=1)
+        self.label = Label(self, text="Enter file path to encrypt: ")
+        self.label.pack()
+        self.entry = Entry(self, state='disabled')
+        self.entry.pack(fill=X, padx=20)
         self.tree = self.create_tree()
-        self.tree.pack(fill=X, padx=20)
+        self.tree.pack(fill=X, padx=20, pady = 10, expand = False )
+        self.enterPathButton = Button(self, text="Enter", command= self.enter_path, state='disabled')
+        self.exitButton= Button(self, text="Quit", command=self.exit_app, state='disabled')
+        self.enterDeleteButton = Button(self, text="Delete", command=self.delete_rows, state='disabled')
+        self.enterPathButton.pack(fill=X, padx=20, pady=1)
+        self.enterDeleteButton.pack(fill=X,padx=20, pady=1)
+        self.exitButton.pack(fill=X, padx=20, pady=1)
         
         
     def create_tree(self):
         cursor.execute(query)
         entries = cursor.fetchall()
 
-        tv = Treeview(self, columns=(1,), show="headings")
-        tv.heading(1, text="path",anchor=S)
+        tv = Treeview(self, columns=(1,), show="headings", height=5)
+        tv.heading(1, text="Path",anchor=S)
         scrollbar = Scrollbar(self, orient=VERTICAL, command=tv.yview)
         tv.configure(yscroll=scrollbar.set)
         tv.bind('<<TreeviewSelect>>', self.get_selected_row)
@@ -118,7 +127,63 @@ class App(Frame):
 
         self.update_tree()
         
-        
+    
+    def check(self):
+        if self.p_entry.get()=="password":
+            self.enterPathButton["state"] = "NORMAL"
+            self.enterDeleteButton["state"] = "NORMAL"
+            self.exitButton["state"] = "NORMAL"
+            self.entry["state"] = "NORMAL"
+            self.p_entry["state"] = "disabled"
+            self.enterPasswordButton['state'] = "disabled"
+
+            try:
+            #Get the key
+                with open("fernet_key.key", "rb") as f:
+                    key = f.read()
+
+                cursor.execute(query)
+                entries = cursor.fetchall()
+            
+                # #Decrypt Files
+                for entry in entries:
+                    for (dirpath, dirnames, filenames) in walk(entry[0]+"\\"):
+                        for i in filenames:
+                            with open(dirpath+i,"rb") as f:
+                                data = f.read() 
+                                fernet = Fernet(key) 
+                                decrypted = fernet.decrypt(data)
+                                with open(dirpath+i,"wb") as g:
+                                    g.write(decrypted)
+                showinfo(title='Information', message="Files are Encrypted!")
+            except InvalidToken:
+                pass
+            
+        else:
+            try:
+                #Get the key
+                with open("fernet_key.key", "rb") as f:
+                    key = f.read()
+
+                cursor.execute(query)
+                entries = cursor.fetchall()
+                
+                #Encrypt Files
+                for entry in entries:
+                    for (dirpath, dirnames, filenames) in walk(entry[0]+"\\"):
+                        for i in filenames:
+                            with open(dirpath+i,"rb") as f:
+                                data = f.read()
+                                fernet = Fernet(key)   
+                                encrypted = fernet.encrypt(data)
+                                with open(dirpath+i,"wb") as g:
+                                    g.write(encrypted)
+                showinfo(title='Information', message="Files are Decrypted!")
+            except:
+                showinfo(title='Error', message="Exception Occured During the Encyrption")
+            
+
+
 def main():
     root = Tk()
     App(root).pack(expand=True, fill='both')
