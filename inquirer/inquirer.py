@@ -1,5 +1,4 @@
 from cryptography.fernet import Fernet, InvalidToken
-from watchdog.events import FileSystemEventHandler
 import os
 from os import walk
 
@@ -15,27 +14,11 @@ from tkinter.messagebox import showinfo
 #     f.write(key)
 
 
-# Get the key
-# with open("fernet_key.key", "rb") as f:
-#     key = f.read()
-
-
-
-# #Encrypt File
-# with open("Kıbrıs Çağrı Açma.PNG","rb") as f:
-#     data = f.read()
-#     fernet = Fernet(key)   
-#     encrypted = fernet.encrypt(data)
-#     with open("Kıbrıs Çağrı Açma.PNG","wb") as g:
-#         g.write(encrypted)
-
 mydb = mysql.connector.connect(user="r3ader", password="Masasandalye1", host="localhost", database="testdb")
 cursor = mydb.cursor()
 
 query = "SELECT * FROM file_paths"
-
 insertQuery = "INSERT INTO file_paths(path) VALUES (%s)"
-
 deleteRowQuery = "DELETE FROM file_paths WHERE path="
 
 
@@ -43,11 +26,10 @@ class App(Frame):
 
     def __init__(self, master):
         super().__init__(master)
-
+        self.master['bg']='black'
         self.master.title("Security Check for Intruders")
         self.master.geometry("650x340")
-
-        self.p_label = Label(self, text="Enter Password Within 1 Minute: ")
+        self.p_label = Label(self, text="Enter Password Within 1 Minute:")
         self.p_label.pack()
         self.p_entry = Entry(self, width=30, show="*")
         self.p_entry.pack(padx=20, pady=1)
@@ -66,20 +48,17 @@ class App(Frame):
         self.enterPathButton.pack(fill=X, padx=20, pady=1)
         self.enterDeleteButton.pack(fill=X,padx=20, pady=1)
         self.exitButton.pack(fill=X, padx=20, pady=1)
+
+        self.master.after(60000, self.check)
         
         
     def create_tree(self):
-        cursor.execute(query)
-        entries = cursor.fetchall()
 
         tv = Treeview(self, columns=(1,), show="headings", height=5)
         tv.heading(1, text="Path",anchor=S)
         scrollbar = Scrollbar(self, orient=VERTICAL, command=tv.yview)
         tv.configure(yscroll=scrollbar.set)
         tv.bind('<<TreeviewSelect>>', self.get_selected_row)
-
-        for entry in entries:
-            tv.insert('','end', values = entry)
 
         return tv
 
@@ -137,6 +116,7 @@ class App(Frame):
             self.p_entry["state"] = "disabled"
             self.enterPasswordButton['state'] = "disabled"
 
+            self.update_tree()
             try:
             #Get the key
                 with open("fernet_key.key", "rb") as f:
@@ -155,7 +135,7 @@ class App(Frame):
                                 decrypted = fernet.decrypt(data)
                                 with open(dirpath+i,"wb") as g:
                                     g.write(decrypted)
-                showinfo(title='Information', message="Files are Encrypted!")
+                showinfo(title='Information', message="Files are Decrypted!")
             except InvalidToken:
                 pass
             
@@ -178,30 +158,15 @@ class App(Frame):
                                 encrypted = fernet.encrypt(data)
                                 with open(dirpath+i,"wb") as g:
                                     g.write(encrypted)
-                showinfo(title='Information', message="Files are Decrypted!")
+                showinfo(title='Information', message="Files are Encrypted!")
             except:
                 showinfo(title='Error', message="Exception Occured During the Encyrption")
             
 
-
 def main():
     root = Tk()
     App(root).pack(expand=True, fill='both')
-    #root.after(10000, root.destroy)
     root.mainloop()
 
 if __name__ == "__main__":
     main()
-
-
-class MyHandler(FileSystemEventHandler):
-    def on_modified(self,event):
-        print("asd")
-
-# #Decrypt File
-# with open("Kıbrıs Çağrı Açma.PNG","rb") as f:
-#     data = f.read() 
-#     decrypted = fernet.decrypt(data)
-#     with open("Kıbrıs Çağrı Açma.PNG","wb") as g:
-#         g.write(decrypted)
-
