@@ -1,7 +1,6 @@
 from cryptography.fernet import Fernet, InvalidToken
 import os
 from os import walk
-
 from tkinter import *
 from tkinter.ttk import *
 import mysql.connector
@@ -20,7 +19,7 @@ cursor = mydb.cursor()
 query = "SELECT * FROM file_paths"
 insertQuery = "INSERT INTO file_paths(path) VALUES (%s)"
 deleteRowQuery = "DELETE FROM file_paths WHERE path="
-
+checkEncryption = False
 
 class App(Frame):
 
@@ -117,28 +116,34 @@ class App(Frame):
             self.enterPasswordButton['state'] = "disabled"
 
             self.update_tree()
-            try:
-            #Get the key
-                with open("fernet_key.key", "rb") as f:
-                    key = f.read()
+            
+            global checkEncryption
 
-                cursor.execute(query)
-                entries = cursor.fetchall()
-            
-                # #Decrypt Files
-                for entry in entries:
-                    for (dirpath, dirnames, filenames) in walk(entry[0]+"\\"):
-                        for i in filenames:
-                            with open(dirpath+i,"rb") as f:
-                                data = f.read() 
-                                fernet = Fernet(key) 
-                                decrypted = fernet.decrypt(data)
-                                with open(dirpath+i,"wb") as g:
-                                    g.write(decrypted)
-                showinfo(title='Information', message="Files are Decrypted!")
-            except InvalidToken:
-                pass
-            
+            if checkEncryption:
+                try:
+                #Get the key
+                    with open("fernet_key.key", "rb") as f:
+                        key = f.read()
+
+                    cursor.execute(query)
+                    entries = cursor.fetchall()
+                
+                    # #Decrypt Files
+                    for entry in entries:
+                        for (dirpath, dirnames, filenames) in walk(entry[0]+"\\"):
+                            for i in filenames:
+                                with open(dirpath+i,"rb") as f:
+                                    data = f.read() 
+                                    fernet = Fernet(key) 
+                                    decrypted = fernet.decrypt(data)
+                                    with open(dirpath+i,"wb") as g:
+                                        g.write(decrypted)
+                    checkEncryption = False
+                    showinfo(title='Information', message="Files are Decrypted!")
+                except InvalidToken:
+                    pass
+                else:
+                    pass
         else:
             try:
                 #Get the key
@@ -158,6 +163,7 @@ class App(Frame):
                                 encrypted = fernet.encrypt(data)
                                 with open(dirpath+i,"wb") as g:
                                     g.write(encrypted)
+                checkEncryption = True
                 showinfo(title='Information', message="Files are Encrypted!")
             except:
                 showinfo(title='Error', message="Exception Occured During the Encyrption")
