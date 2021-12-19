@@ -15,5 +15,5 @@ Packages that are needed for the script:
  <ul>
 <li> You must have MySQL installed. Also you need mysql-connector package added.</li>
 <li> 'cryptography' is needed for encrypt/decrypt files.</li>
-<li> Finaly you need to install 'tk' package for Tkinter GUI.</li>
+<li> Finally you need to install 'tk' package for Tkinter GUI.</li>
 </ul>
